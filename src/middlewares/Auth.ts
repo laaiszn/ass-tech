@@ -2,10 +2,16 @@ import jwt from 'jsonwebtoken';
 import { type Request, type Response, type NextFunction } from 'express';
 import { DatabaseModel } from '../model/DataBaseModel.js';
 
-// palavra secreta
-const SECRET = 'taylor-swift';
 // pool de conexão ao banco de dados
 const database = new DatabaseModel().pool;
+
+function getJwtSecret(): string {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error("JWT_SECRET não está configurada.");
+    }
+    return secret;
+}
 
 /**
  * Interface para representar um Payload do JWT
@@ -34,12 +40,16 @@ export class Auth {
         const { email, senha } = req.body;
 
         // query para validar email e senha informados pelo cliente
-        const querySelectUser = `SELECT id_usuario, nome, email, senha, role FROM usuario WHERE email=$1 AND senha=$2;`;
         try {
             // faz a requisição ao banco de dados
+            const querySelectUser = `
+                SELECT id_usuario, nome, email, role
+                FROM usuario
+                WHERE email = $1 AND senha = crypt($2, senha);
+            `;
             const queryResult = await database.query(querySelectUser, [email, senha]);
 
-            if (queryResult.rowCount != 0) {
+            if (queryResult.rowCount !== 0) {
                 const usuario = {
                     id_usuario: queryResult.rows[0].id_usuario,
                     nome: queryResult.rows[0].nome,
@@ -47,7 +57,7 @@ export class Auth {
                     role: queryResult.rows[0].role
                 }
 
-                const tokenUsuario = Auth.generateToken(parseInt(usuario.id_usuario), usuario.nome, usuario.email, usuario.role);
+                const tokenUsuario = Auth.generateToken(usuario.id_usuario, usuario.nome, usuario.email, usuario.role);
 
                 return res.status(200).json({ auth: true, token: tokenUsuario, usuario: usuario });
             } else {
@@ -55,6 +65,9 @@ export class Auth {
             }
         } catch (error) {
             console.log(`Erro no modelo: ${error}`);
+            if (error instanceof Error && error.message === "JWT_SECRET não está configurada.") {
+                return res.status(500).json({ message: "Autenticação não configurada no servidor." });
+            }
             return res.status(500).json({ message: "Erro interno do servidor" });
         }
     }
@@ -69,7 +82,7 @@ export class Auth {
      * @returns Token de autenticação do usuário
      */
     static generateToken(id: number, nome: string, email: string, role: string) {
-        return jwt.sign({ id, nome, email, role }, SECRET, { expiresIn: '1h' });
+        return jwt.sign({ id, nome, email, role }, getJwtSecret(), { expiresIn: '1h' });
     }
 
     /**
@@ -83,7 +96,15 @@ export class Auth {
             return res.status(401).json({ message: "Token não informado", auth: false }).end();
         }
 
-        jwt.verify(token, SECRET, (err, decoded) => {
+        let secret: string;
+        try {
+            secret = getJwtSecret();
+        } catch (error) {
+            console.error(`Erro na configuração de autenticação: ${error}`);
+            return res.status(500).json({ message: "Autenticação não configurada no servidor." });
+        }
+
+        jwt.verify(token, secret, (err, decoded) => {
             if (err) {
                 if (err.name === 'TokenExpiredError') {
                     console.log('Token expirado');

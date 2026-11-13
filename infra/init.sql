@@ -11,7 +11,8 @@ CREATE TABLE usuario (
 id_usuario SERIAL PRIMARY KEY,
 nome VARCHAR(100) NOT NULL,
 email VARCHAR(120) NOT NULL UNIQUE,
-senha VARCHAR(100) NOT NULL
+senha VARCHAR(100) NOT NULL,
+role VARCHAR(30) NOT NULL DEFAULT 'ATENDENTE'
 );
 
 
@@ -45,10 +46,10 @@ status VARCHAR(20) NOT NULL DEFAULT 'AGENDADO'
 
 
 
-INSERT INTO usuario (nome, email, senha_hash) VALUES
-('Administrador', 'admin@assistec.com', 'admin123'),
-('Carlos Técnico', 'carlos@assistec.com','tecnico123'),
-('Ana Atendente', 'ana@assistec.com', 'atendente123');
+INSERT INTO usuario (nome, email, senha, role) VALUES
+('Administrador', 'admin@assistec.com', crypt('admin123', gen_salt('bf')), 'ADMIN'),
+('Carlos Técnico', 'carlos@assistec.com', crypt('tecnico123', gen_salt('bf')), 'TECNICO'),
+('Ana Atendente', 'ana@assistec.com', crypt('atendente123', gen_salt('bf')), 'ATENDENTE');
 
 
 INSERT INTO cliente (nome, cpf, email, telefone) VALUES
@@ -68,4 +69,3 @@ INSERT INTO agendamento (id_equipamento, data_agendamento, descricao_servico, st
 (2, '2026-11-18', 'Substituição de tela', 'AGENDADO'),
 (3, '2026-12-02', 'Diagnóstico de falha de imagem', 'AGENDADO'),
 (4, '2026-11-20', 'Troca de cilindro', 'AGENDADO');
-

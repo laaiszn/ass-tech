@@ -4,14 +4,14 @@ import { DatabaseModel } from "./DataBaseModel.js";
 const database = new DatabaseModel().pool;
 
 class Agendamento {
-    private id_agendamento: string = "";
-    private id_equipamento: string;
+    private id_agendamento: number = 0;
+    private id_equipamento: number;
     private data_agendamento: Date;
     private descricao_servico: string;
     private status: string;
 
     constructor(
-        _id_equipamento: string,
+        _id_equipamento: number,
         _data_agendamento: Date,
         _descricao_servico: string,
         _status: string
@@ -22,19 +22,19 @@ class Agendamento {
         this.status = _status;
     }
 
-    public getIdAgendamento(): string {
+    public getIdAgendamento(): number {
         return this.id_agendamento;
     }
 
-    public setIdAgendamento(id_agendamento: string): void {
+    public setIdAgendamento(id_agendamento: number): void {
         this.id_agendamento = id_agendamento;
     }
 
-    public getIdEquipamento(): string {
+    public getIdEquipamento(): number {
         return this.id_equipamento;
     }
 
-    public setIdEquipamento(id_equipamento: string): void {
+    public setIdEquipamento(id_equipamento: number): void {
         this.id_equipamento = id_equipamento;
     }
 
@@ -66,16 +66,25 @@ class Agendamento {
         const listaDeAgendamentos: Array<AgendamentoDTO> = [];
 
         try {
-            const querySelectAgendamentos = `SELECT * FROM agendamento;`;
+            const querySelectAgendamentos = `
+                SELECT a.*, c.nome AS cliente_nome, e.tipo, e.marca, e.modelo
+                FROM agendamento a
+                JOIN equipamento e ON e.id_equipamento = a.id_equipamento
+                JOIN cliente c ON c.id_cliente = e.id_cliente;
+            `;
             const respostaBD = await database.query(querySelectAgendamentos);
 
             respostaBD.rows.forEach((agendamento: any) => {
                 const agendamentoDTO: AgendamentoDTO = {
-                    id_agendamento: agendamento.id_agendamento,
-                    id_equipamento: agendamento.id_equipamento,
+                    id_agendamento: Number(agendamento.id_agendamento),
+                    id_equipamento: Number(agendamento.id_equipamento),
                     data_agendamento: agendamento.data_agendamento,
                     descricao_servico: agendamento.descricao_servico,
-                    status: agendamento.status
+                    status: agendamento.status,
+                    cliente_nome: agendamento.cliente_nome,
+                    tipo: agendamento.tipo,
+                    marca: agendamento.marca,
+                    modelo: agendamento.modelo
                 };
 
                 listaDeAgendamentos.push(agendamentoDTO);
@@ -88,9 +97,15 @@ class Agendamento {
         }
     }
 
-    static async listarAgendamento(id_agendamento: string): Promise<AgendamentoDTO | null> {
+    static async listarAgendamento(id_agendamento: number): Promise<AgendamentoDTO | null> {
         try {
-            const querySelectAgendamento = `SELECT * FROM agendamento WHERE id_agendamento = $1;`;
+            const querySelectAgendamento = `
+                SELECT a.*, c.nome AS cliente_nome, e.tipo, e.marca, e.modelo
+                FROM agendamento a
+                JOIN equipamento e ON e.id_equipamento = a.id_equipamento
+                JOIN cliente c ON c.id_cliente = e.id_cliente
+                WHERE a.id_agendamento = $1;
+            `;
             const respostaBD = await database.query(querySelectAgendamento, [id_agendamento]);
 
             if (respostaBD.rows.length === 0) {
@@ -98,11 +113,15 @@ class Agendamento {
             }
 
             const agendamentoDTO: AgendamentoDTO = {
-                id_agendamento: respostaBD.rows[0].id_agendamento,
-                id_equipamento: respostaBD.rows[0].id_equipamento,
+                id_agendamento: Number(respostaBD.rows[0].id_agendamento),
+                id_equipamento: Number(respostaBD.rows[0].id_equipamento),
                 data_agendamento: respostaBD.rows[0].data_agendamento,
                 descricao_servico: respostaBD.rows[0].descricao_servico,
-                status: respostaBD.rows[0].status
+                status: respostaBD.rows[0].status,
+                cliente_nome: respostaBD.rows[0].cliente_nome,
+                tipo: respostaBD.rows[0].tipo,
+                marca: respostaBD.rows[0].marca,
+                modelo: respostaBD.rows[0].modelo
             };
 
             return agendamentoDTO;
@@ -139,7 +158,7 @@ class Agendamento {
         }
     }
 
-    static async removerAgendamento(id_agendamento: string): Promise<boolean> {
+    static async removerAgendamento(id_agendamento: number): Promise<boolean> {
         try {
             const queryDeleteAgendamento = `DELETE FROM agendamento WHERE id_agendamento = $1;`;
             const result = await database.query(queryDeleteAgendamento, [id_agendamento]);

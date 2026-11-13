@@ -3,8 +3,11 @@ import { Router } from "express";
 import ClienteController from "./controller/ClienteController.js";
 import EquipamentoController from "./controller/EquipamentoController.js";
 import AgendamentoController from "./controller/AgendamentoController.js";
+import { Auth } from "./middlewares/Auth.js";
 
 const router = Router();
+
+router.post("/api/login", Auth.validacaoUsuario);
 
 // Clientes
 router.get("/clientes", ClienteController.todos);

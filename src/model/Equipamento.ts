@@ -77,13 +77,18 @@ class Equipamento {
         const listaDeEquipamentos: Array<EquipamentoDTO> = [];
 
         try {
-            const querySelectEquipamentos = `SELECT * FROM equipamento;`;
+            const querySelectEquipamentos = `
+                SELECT e.*, c.nome AS cliente_nome
+                FROM equipamento e
+                JOIN cliente c ON c.id_cliente = e.id_cliente;
+            `;
             const respostaBD = await database.query(querySelectEquipamentos);
 
             respostaBD.rows.forEach((equipamento: any) => {
                 const equipamentoDTO: EquipamentoDTO = {
                     id_equipamento: equipamento.id_equipamento,
                     id_cliente: equipamento.id_cliente,
+                    cliente_nome: equipamento.cliente_nome,
                     tipo: equipamento.tipo,
                     marca: equipamento.marca,
                     modelo: equipamento.modelo,
@@ -102,7 +107,12 @@ class Equipamento {
 
     static async listarEquipamento(id_equipamento: number): Promise<EquipamentoDTO | null> {
         try {
-            const querySelectEquipamento = `SELECT * FROM equipamento WHERE id_equipamento = $1;`;
+            const querySelectEquipamento = `
+                SELECT e.*, c.nome AS cliente_nome
+                FROM equipamento e
+                JOIN cliente c ON c.id_cliente = e.id_cliente
+                WHERE e.id_equipamento = $1;
+            `;
             const respostaBD = await database.query(querySelectEquipamento, [id_equipamento]);
 
             if (respostaBD.rows.length === 0) {
@@ -112,6 +122,7 @@ class Equipamento {
             const equipamentoDTO: EquipamentoDTO = {
                 id_equipamento: respostaBD.rows[0].id_equipamento,
                 id_cliente: respostaBD.rows[0].id_cliente,
+                cliente_nome: respostaBD.rows[0].cliente_nome,
                 tipo: respostaBD.rows[0].tipo,
                 marca: respostaBD.rows[0].marca,
                 modelo: respostaBD.rows[0].modelo,

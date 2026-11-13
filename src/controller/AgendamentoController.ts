@@ -16,7 +16,7 @@ class AgendamentoController extends Agendamento {
 
     static async agendamento(req: Request, res: Response) {
         try {
-            const idAgendamento = req.params.id as string;
+            const idAgendamento = parseInt(req.params.id as string, 10);
             const agendamento = await Agendamento.listarAgendamento(idAgendamento);
 
             if (!agendamento) {
@@ -56,7 +56,7 @@ class AgendamentoController extends Agendamento {
 
     static async remover(req: Request, res: Response): Promise<Response> {
         try {
-            const idAgendamento = req.params.id as string;
+            const idAgendamento = parseInt(req.params.id as string, 10);
             const result = await Agendamento.removerAgendamento(idAgendamento);
 
             if (result) {
@@ -81,7 +81,7 @@ class AgendamentoController extends Agendamento {
                 dadosRecebidos.status ?? 'PENDENTE'
             );
 
-            agendamento.setIdAgendamento(req.params.id as string);
+            agendamento.setIdAgendamento(parseInt(req.params.id as string, 10));
 
             const result = await Agendamento.atualizarAgendamento(agendamento);
 
